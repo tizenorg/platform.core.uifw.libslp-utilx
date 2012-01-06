@@ -1,0 +1,20 @@
+Source: libslp-utilx
+Section: libs
+Priority: extra
+Maintainer: Doyoun Kang <doyoun.kang@samsung.com>, Sung-Jin Park <sj76.park@samsung.com>, Gwangyeong Mun <kk.moon@samsung.com>
+Build-Depends: debhelper (>= 5), autotools-dev, libx11-dev 
+Standards-Version: 3.7.2
+
+Package: libslp-utilx-dev
+Section: libs
+Architecture: any
+Depends: libslp-utilx-0 (= ${Source-Version}), libx11-dev 
+Description: Utilities of Xwindow (development files)
+ Utility functions for the XWindow
+
+Package: libslp-utilx-0
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libx11-6
+Description: Utilities of Xwindow (shared object files)
+ Utility functions for the XWindow
