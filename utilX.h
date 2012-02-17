@@ -67,6 +67,7 @@ extern "C" {
 #define KEY_PREVIOUSSONG	"XF86AudioPrev"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Previous Song' key */
 #define KEY_REWIND		"XF86AudioRewind"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Rewind Song' key */
 #define KEY_FASTFORWARD		"XF86AudioForward"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Forward Song' key */
+#define KEY_MEDIA		"XF86AudioMedia"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Media' key */
 
 // 3-Touch key
 #define KEY_SEND		"XF86Send"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Send' key */
@@ -95,6 +96,7 @@ extern "C" {
 #define LEN_KEY_PREVIOUSSONG		13/**< this macro is the length of string corresponds to 'Previous Song' key */
 #define LEN_KEY_REWIND		15/**< this macro is the length of string corresponds to 'Rewind Song' key */
 #define LEN_KEY_FASTFORWARD		16/**< this macro is the length of string corresponds to 'Forwand Song' key */
+#define LEN_KEY_MEDIA		14/**< this macro is the length of string corresponds to 'Media' key */
 
 // 3-Touch key
 #define LEN_KEY_SEND		8	/**< this macro is the length of string corresponds to 'Send' key */

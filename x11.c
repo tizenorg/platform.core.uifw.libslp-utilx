@@ -375,6 +375,7 @@ static int *_del_grabbed_key (int *key_list, int i, unsigned long *cnt)
 
 static void _set_exclusive_grab_info_to_root (Display *disp, int keycode, Window win, int grab_mode)
 {
+	int i;
 	int *key_list = NULL;
 
 	Atom ret_type;
@@ -407,9 +408,15 @@ static void _set_exclusive_grab_info_to_root (Display *disp, int keycode, Window
 		goto out;
 	}
 
-#if 1//def __DEBUG__
+#ifdef __DEBUG__
 	printf("[%s] keycode = %d\n", __FUNCTION__, keycode);
 #endif
+
+	for( i=0 ; i < nr_item ; i++ )
+	{
+		if( key_list && (key_list[i] == keycode) )
+			return;
+	}
 
 	XChangeProperty(disp, DefaultRootWindow(disp), ex_grabwin, XA_CARDINAL, 32,
 	nr_item ? PropModeAppend : PropModeReplace, (unsigned char *)&keycode, 1);
@@ -625,8 +632,15 @@ API int utilx_grab_key (Display* disp, Window win, const char* key, int grab_mod
 		i = _search_grabbed_key(key_list, keycode, cnt);
 		_free_list_of_grabbed_key(key_list);
 		if ( i != -1 ) {
+			if( grab_mode == OR_EXCLUSIVE_GRAB )
+			{
+				utilx_ungrab_key(disp, win, key);
+			}
+			else
+			{
 			fprintf(stderr, "Key is already grabbed\n");
 			goto out;
+			}
 		}
 	}
 
@@ -759,7 +773,8 @@ API Utilx_Key_Status utilx_get_key_status(Display* dpy, char *key_name)
 		!strncmp(key_name, KEY_NEXTSONG, LEN_KEY_NEXTSONG) ||
 		!strncmp(key_name, KEY_PREVIOUSSONG, LEN_KEY_PREVIOUSSONG) ||
 		!strncmp(key_name, KEY_REWIND, LEN_KEY_REWIND) ||
-		!strncmp(key_name, KEY_FASTFORWARD, LEN_KEY_FASTFORWARD) )
+		!strncmp(key_name, KEY_FASTFORWARD, LEN_KEY_FASTFORWARD) ||
+		!strncmp(key_name, KEY_MEDIA, LEN_KEY_MEDIA) )
 	{
 		KeySym ks = XStringToKeysym(key_name);
 		KeyCode kc = XKeysymToKeycode(dpy, ks);
