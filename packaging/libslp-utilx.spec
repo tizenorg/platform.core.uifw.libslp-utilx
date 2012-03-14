@@ -1,7 +1,7 @@
 Name:	    libslp-utilx
 Summary:    utilX 
-Version:    0.1.4
-Release:    0
+Version:	0.1.7
+Release:    1.1
 Group:      System/Libraries
 License:    SAMSUNG
 Source0:    %{name}-%{version}.tar.gz
