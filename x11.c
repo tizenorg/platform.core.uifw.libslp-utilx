@@ -1,7 +1,7 @@
 /*
  * libslp-utilx
  *
-   Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved 
+   Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ static Atom _atom_grab_or_excl_win = None;
 
 static Atom _atom_notification_level = None;
 static Atom _atom_indicator_visible_state = None;
+static Atom _atom_indicator_visible_state_on = None;
+static Atom _atom_indicator_visible_state_off = None;
 
 static Atom _atom_comp_effect_state = None;
 static Atom _atom_comp_fake_launch = None;
@@ -75,6 +77,8 @@ static int _utilx_get_window_property (Display* dpy, Window win, Atom atom, Atom
 static void _utilx_effect_atom_check( Display* dpy );
 static Atom _utilx_convert_style_to_atom( Display* dpy, Utilx_Effect_Style style );
 static Utilx_Effect_Style _utilx_convert_atom_to_style( Display* dpy, Atom style );
+
+static int _utilx_get_indicator_atoms(Display *dpy);
 
 API void utilx_set_system_notification_level (Display* dpy, Window win, Utilx_Notification_Level level)
 {
@@ -181,6 +185,40 @@ error:
 	return noti_level;
 }
 
+static int _utilx_get_indicator_atoms(Display *dpy)
+{
+	if (!_atom_indicator_visible_state)
+	{
+		_atom_indicator_visible_state = XInternAtom (dpy, "_E_ILLUME_INDICATOR_STATE", False);
+		if (!_atom_indicator_visible_state)
+		{
+			fprintf (stderr, "[UTILX] Error.. Cannot create _E_ILLUME_INDICATOR_STATE atom.. %s (%d)\n", __func__, __LINE__);
+			return 0;
+		}
+	}
+
+	if (!_atom_indicator_visible_state_on)
+	{
+		_atom_indicator_visible_state_on = XInternAtom (dpy, "_E_ILLUME_INDICATOR_ON", False);
+		if (!_atom_indicator_visible_state_on)
+		{
+			fprintf (stderr, "[UTILX] Error.. Cannot create _E_ILLUME_INDICATOR_ON atom.. %s (%d)\n", __func__, __LINE__);
+			return 0;
+		}
+	}
+
+	if (!_atom_indicator_visible_state_off)
+	{
+		_atom_indicator_visible_state_off = XInternAtom (dpy, "_E_ILLUME_INDICATOR_OFF", False);
+		if (!_atom_indicator_visible_state_off)
+		{
+			fprintf (stderr, "[UTILX] Error.. Cannot create _E_ILLUME_INDICATOR_OFF atom.. %s (%d)\n", __func__, __LINE__);
+			return 0;
+		}
+	}
+
+	return 1;
+}
 
 API void utilx_enable_indicator (Display* dpy, Window win, int enable)
 {
@@ -192,18 +230,22 @@ API void utilx_enable_indicator (Display* dpy, Window win, int enable)
 		return;
 	}
 
-	if (!_atom_indicator_visible_state)
+	if (!_utilx_get_indicator_atoms(dpy))
 	{
-		_atom_indicator_visible_state = XInternAtom (dpy, "_E_ILLUME_INDICATOR_STATE", False);
-		if (!_atom_indicator_visible_state)
-		{
-			fprintf (stderr, "[UTILX] Error.. Cannot create _E_ILLUME_INDICATOR_STATE atom.. %s (%d)\n", __func__, __LINE__);
-			return;
-		}
+		fprintf (stderr, "[UTILX] Error.. Cannot create atoms.. %s (%d)\n", __func__, __LINE__);
+		return;
 	}
 
-	_utilx_set_window_property (dpy, win, _atom_indicator_visible_state, XA_CARDINAL,
-			(unsigned int *)&enable, 1);
+	if (enable == 1)
+	{
+		_utilx_set_window_property (dpy, win, _atom_indicator_visible_state, XA_ATOM,
+			(unsigned int *)&_atom_indicator_visible_state_on, 1);
+	}
+	else
+	{
+		_utilx_set_window_property (dpy, win, _atom_indicator_visible_state, XA_ATOM,
+			(unsigned int *)&_atom_indicator_visible_state_off, 1);
+	}
 }
 
 
@@ -212,7 +254,7 @@ API int utilx_get_indicator_state (Display* dpy, Window win)
 	UTILX_TRACE ("[UTILX] utilx_indicator_set_visible_state... win = %x, show_state = %d\n", win, enable);
 
 	int ret;
-	int state;
+	Atom state;
 
 	if (dpy == NULL)
 	{
@@ -220,21 +262,24 @@ API int utilx_get_indicator_state (Display* dpy, Window win)
 		return -1;
 	}
 
-	if (!_atom_indicator_visible_state)
+	if (!_utilx_get_indicator_atoms(dpy))
 	{
-		_atom_indicator_visible_state = XInternAtom (dpy, "_E_ILLUME_INDICATOR_STATE", False);
-		if (!_atom_indicator_visible_state)
-		{
-			fprintf (stderr, "[UTILX] Error.. Cannot create _E_ILLUME_INDICATOR_STATE atom.. %s (%d)\n", __func__, __LINE__);
-			return -1;
-		}
+		fprintf (stderr, "[UTILX] Error.. Cannot create atoms.. %s (%d)\n", __func__, __LINE__);
+		return;
 	}
 
-	ret = _utilx_get_window_property (dpy, win, _atom_indicator_visible_state, XA_CARDINAL,
+	ret = _utilx_get_window_property (dpy, win, _atom_indicator_visible_state, XA_ATOM,
 			(unsigned int *)&state, 1);
 
 	if (ret > 0)
-		return state;
+	{
+		if (state == _atom_indicator_visible_state_on)
+			return 1;
+		else if (state == _atom_indicator_visible_state_off)
+			return 0;
+		else
+			return -1;
+	}
 	else
 		return -1;
 }

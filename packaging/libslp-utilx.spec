@@ -3,7 +3,7 @@ Summary:    utilX
 Version:	0.1.7
 Release:    1.1
 Group:      System/Libraries
-License:    SAMSUNG
+License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
