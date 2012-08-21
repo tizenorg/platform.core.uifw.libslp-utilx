@@ -1,6 +1,7 @@
-Name:	    libslp-utilx
+#sbs-git:slp/pkgs/l/libslp-utilx libslp-utilx 0.1.7 5957503c84e65113399e346c7d5618e73957d6ff
+Name:       libslp-utilx
 Summary:    utilX 
-Version:	0.1.7
+Version:    0.1.7
 Release:    1.1
 Group:      System/Libraries
 License:    Apache-2.0
@@ -9,7 +10,14 @@ Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
 BuildRequires: cmake
+BuildRequires: pkgconfig(libdri2)
+BuildRequires: pkgconfig(dri2proto)
 BuildRequires: pkgconfig(x11)
+BuildRequires: pkgconfig(xext)
+BuildRequires: pkgconfig(xv)
+BuildRequires: pkgconfig(xdamage)
+BuildRequires: pkgconfig(libdrm)
+BuildRequires: pkgconfig(libdrm_slp)
 
 %description
 Utility functions for the XWindow

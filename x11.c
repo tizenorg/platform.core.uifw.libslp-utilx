@@ -1,7 +1,7 @@
 /*
  * libslp-utilx
  *
-   Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+   Copyright (c) 2012 Samsung Electronics Co., Ltd All Rights Reserved
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,10 +23,18 @@
 #include <errno.h>
 
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
 #include "utilX.h"
 #include "util_x11.h"
+
+#include <fcntl.h>
+#include <X11/extensions/Xvlib.h>
+#include <X11/extensions/Xvproto.h>
+#include <X11/extensions/Xdamage.h>
+#include <dri2.h>
+#include <drm_slp_bufmgr.h>
 
 
 #define UTILX_DEBUG 0
@@ -1248,4 +1256,499 @@ API void utilx_show_capture_effect( Display *dpy, Window win)
                 SubstructureRedirectMask | SubstructureNotifyMask,
                 &xev );
     XSync(dpy, 0 );
+}
+
+API UtilxScrnConf *utilx_scrnconf_allocate (void)
+{
+    UtilxScrnConf *scrnconf = calloc (1, sizeof(UtilxScrnConf));
+    if (!scrnconf)
+    {
+        fprintf (stderr, "fail to allocate UtilxScrnConf\n");
+        return NULL;
+    }
+
+    return scrnconf;
+}
+
+API void utilx_scrnconf_free (UtilxScrnConf *scrnconf)
+{
+    if (!scrnconf)
+        return;
+
+    if (scrnconf->str_output)
+        free (scrnconf->str_output);
+
+    if (scrnconf->str_resolution)
+        free (scrnconf->str_resolution);
+
+    free(scrnconf);
+    scrnconf = NULL;
+}
+
+API void utilx_scrnconf_get_info (Display *dpy, UtilxScrnConf *scrnconf)
+{
+    Window win = DefaultRootWindow(dpy);
+	Atom scrnconf_atom = None;
+    XTextProperty xtp;
+    char *str = NULL;
+    char *ptr = NULL;
+    int items;
+    char **list = NULL;
+    int i = 0;
+    int s;
+
+    scrnconf_atom = XInternAtom (dpy, "_SCRNCONF_INFO", False);
+
+    /* get property */
+    if (XGetTextProperty (dpy, win, &xtp, scrnconf_atom))
+    {
+        s = XmbTextPropertyToTextList (dpy, &xtp, &list, &items);
+        if ((s == XLocaleNotSupported) ||
+            (s == XNoMemory) || (s == XConverterNotFound))
+          str = strdup((char *)xtp.value);
+        else if ((s >= Success) && (items > 0))
+          str = strdup(list[0]);
+
+        if (list)
+            XFreeStringList (list);
+
+        XFree(xtp.value);
+    }
+
+    ptr = strtok (str, ",");
+    while (ptr != NULL)
+    {
+        if (i == 0)
+        {
+            scrnconf->str_output = calloc (1, strlen(ptr));
+            if (!scrnconf->str_output)
+                goto fail;
+
+            strcpy (scrnconf->str_output, ptr);
+        }
+        else if (i == 1)
+        {
+            if (!strcmp(ptr, "CONNECT"))
+                scrnconf->status = UTILX_SCRNCONF_STATUS_CONNECT;
+            else if (!strcmp(ptr, "ACTIVE"))
+                scrnconf->status = UTILX_SCRNCONF_STATUS_ACTIVE;
+            else
+                scrnconf->status = UTILX_SCRNCONF_STATUS_NULL;
+        }
+        else if (i == 2)
+        {
+            scrnconf->str_resolution = calloc (1, strlen(ptr));
+            if (!scrnconf->str_resolution)
+                goto fail;
+
+            strcpy (scrnconf->str_resolution, ptr);
+        }
+        else if (i == 3)
+        {
+            if (!strcmp(ptr, "CLONE"))
+                scrnconf->dispmode = UTILX_SCRNCONF_DISPMODE_CLONE;
+            else if (!strcmp(ptr, "EXTENDED"))
+                scrnconf->dispmode = UTILX_SCRNCONF_DISPMODE_EXTENDED;
+            else
+                scrnconf->dispmode = UTILX_SCRNCONF_DISPMODE_NULL;
+        }
+        else
+           break;
+
+        ptr = strtok (NULL, ",");
+        i++;
+    }
+
+    free (str);
+
+    return;
+fail:
+    if (str)
+        free (str);
+
+    if (scrnconf->str_output)
+        free (scrnconf->str_output);
+    if (scrnconf->str_resolution)
+        free (scrnconf->str_resolution);
+    if (scrnconf)
+    {
+        free (scrnconf);
+        scrnconf = NULL;
+    }
+    return;
+}
+
+API int utilx_scrnconf_set_dispmode (Display *dpy, Utilx_Scrnconf_Dispmode dispmode)
+{
+    Window win = DefaultRootWindow(dpy);
+	XEvent xev;
+	Atom scrnconf_atom = None;
+    UtilxScrnConf *scrnconf = NULL;
+
+    scrnconf = utilx_scrnconf_allocate ();
+    if (!scrnconf)
+        return 0;
+
+    utilx_scrnconf_get_info (dpy, scrnconf);
+
+    if (scrnconf->status  == UTILX_SCRNCONF_STATUS_NULL)
+    {
+        fprintf (stderr, "[utilx_scrnconf]: the status of screen configuration is null\n");
+        return 0;
+    }
+
+    if (scrnconf->dispmode == dispmode)
+    {
+        fprintf (stderr, "[utilx_scrnconf]: dispmode (%d) already set\n", dispmode);
+        return 0;
+    }
+
+    utilx_scrnconf_free (scrnconf);
+
+    scrnconf_atom = XInternAtom (dpy, "_SCRNCONF_DISPMODE_SET", False);
+
+	xev.xclient.window = win;
+	xev.xclient.type = ClientMessage;
+	xev.xclient.message_type = scrnconf_atom;
+	xev.xclient.format = 32;
+	xev.xclient.data.s[0] = dispmode;
+
+	XSendEvent(dpy, win, False, StructureNotifyMask, &xev);
+	XSync(dpy, False);
+
+    return 1;
+}
+
+typedef struct _ShotInfo
+{
+    Display *dpy;
+
+    int      port;
+    unsigned int width;
+    unsigned int height;
+    Pixmap   pixmap;
+    GC       gc;
+
+    int      drm_fd;
+    drm_slp_bufmgr bufmgr;
+    void    *virtual;
+
+    DRI2Buffer* dri2_buffers;
+    drm_slp_bo bo;
+
+    Damage   damage;
+    int      damage_base;
+} ShotInfo;
+
+#define FOURCC(a,b,c,d) (((unsigned)d&0xff)<<24 | ((unsigned)c&0xff)<<16 | ((unsigned)b&0xff)<<8 | ((unsigned)a&0xff))
+
+#define FOURCC_RGB32    FOURCC('R','G','B','4')
+
+static ShotInfo *shot_info;
+
+static int
+_get_port (Display *dpy, unsigned int id)
+{
+    unsigned int ver, rev, req_base, evt_base, err_base;
+    unsigned int adaptors;
+    XvAdaptorInfo *ai = NULL;
+    XvImageFormatValues *fo = NULL;
+    int formats;
+    int i, j, p;
+
+    if (XvQueryExtension (dpy, &ver, &rev, &req_base, &evt_base, &err_base) != Success)
+        return -1;
+
+    if (XvQueryAdaptors (dpy, DefaultRootWindow (dpy), &adaptors, &ai) != Success)
+        return -1;
+
+    if (!ai)
+        return -1;
+
+    for (i = 0; i < adaptors; i++)
+    {
+        int support_format = False;
+
+        if (!(ai[i].type & XvStillMask))
+            continue;
+
+        p = ai[i].base_id;
+
+        fo = XvListImageFormats (dpy, p, &formats);
+        for (j = 0; j < formats; j++)
+            if (fo[j].id == (int)id)
+                support_format = True;
+
+        if (fo)
+            XFree (fo);
+
+        if (!support_format)
+            continue;
+
+        if (XvGrabPort (dpy, p, 0) == Success)
+        {
+            XvFreeAdaptorInfo (ai);
+            return p;
+        }
+
+        fprintf (stderr, "[UTILX] fail : grab port. \n");
+    }
+
+    XvFreeAdaptorInfo (ai);
+
+    return -1;
+}
+
+static void
+_deinit_screen_shot (ShotInfo *info)
+{
+    Atom atom_stream_off;
+
+    if (!info)
+        return;
+
+    atom_stream_off = XInternAtom (info->dpy, "_USER_WM_PORT_ATTRIBUTE_STREAM_OFF", False);    
+    if (atom_stream_off > 0)
+        XvSetPortAttribute (info->dpy, info->port, atom_stream_off, 1);
+
+    if (info->dri2_buffers)
+        free(info->dri2_buffers);
+    if (info->bo)
+        drm_slp_bo_unref(info->bo);
+    if (info->bufmgr)
+        drm_slp_bufmgr_destroy (info->bufmgr);
+    if (info->gc)
+        XFreeGC (info->dpy, info->gc);
+    if (info->pixmap > 0)
+        XFreePixmap (info->dpy, info->pixmap);
+    if (info->port > 0)
+        XvUngrabPort (info->dpy, info->port, 0);
+    if (info->dpy)
+        XCloseDisplay (info->dpy);
+
+    free (info);
+    shot_info = NULL;
+}
+
+static ShotInfo*
+_init_screen_shot (Display* dpy, unsigned int width, unsigned int height)
+{
+    ShotInfo *info = NULL;
+    int screen;
+    int dri2_base = 0;
+    int dri2_err_base = 0;
+    int damage_err_base = 0;
+    int dri2Major, dri2Minor;
+    char *driverName = NULL, *deviceName = NULL;
+    Atom atom_capture;
+    unsigned int attachments[1];
+    int dri2_count, dri2_out_count;
+    int dri2_width, dri2_height, dri2_stride;
+    drm_magic_t magic;
+
+    if (shot_info)
+    {
+        if (shot_info->width == width && shot_info->height == height)
+            return shot_info;
+
+        _deinit_screen_shot (shot_info);
+    }
+
+    info = calloc (1, sizeof (ShotInfo));
+    if (!info)
+        goto fail_init;
+
+    shot_info = info;
+
+    /* dpy */
+#if 0
+    info->dpy = XOpenDisplay (NULL);
+#else
+    info->dpy = dpy;
+#endif
+
+    /* port */
+    info->port = _get_port (info->dpy, FOURCC_RGB32);
+    if (info->port <= 0)
+        goto fail_init;
+
+    /* width, height */
+    atom_capture = XInternAtom (info->dpy, "_USER_WM_PORT_ATTRIBUTE_CAPTURE", False);
+    XvSetPortAttribute (info->dpy, info->port, atom_capture, 1);
+    XvQueryBestSize (info->dpy, info->port, 0, 0, 0, width, height, &width, &height);
+    if (width <= 0 || height <= 0)
+        goto fail_init;
+    info->width = width;
+    info->height = height;
+
+    /* pixmap */
+    info->pixmap = XCreatePixmap (info->dpy,
+                                  DefaultRootWindow (info->dpy),
+                                  width, height,
+                                  DefaultDepth (info->dpy, DefaultScreen (info->dpy)));
+    if (info->pixmap <= 0)
+        goto fail_init;
+
+    /* gc */
+    info->gc = XCreateGC (info->dpy, info->pixmap, 0, 0);
+    if (info->gc <= 0)
+        goto fail_init;
+
+    XSetForeground (info->dpy, info->gc, 0xFF000000);
+    XFillRectangle (info->dpy, info->pixmap, info->gc, 0, 0, width, height);
+
+    screen = DefaultScreen(info->dpy);
+    if (!DRI2QueryExtension (info->dpy, &dri2_base, &dri2_err_base))
+    {
+        fprintf (stderr, "[UTILX] fail : DRI2QueryExtension !!\n");
+        goto fail_init;
+    }
+
+    if (!DRI2QueryVersion (info->dpy, &dri2Major, &dri2Minor))
+    {
+        fprintf (stderr, "[UTILX] fail : DRI2QueryVersion !!\n");
+        goto fail_init;
+    }
+
+    if (!DRI2Connect (info->dpy, RootWindow(info->dpy, screen), &driverName, &deviceName))
+    {
+        fprintf (stderr, "[UTILX] fail : DRI2Connect !!\n");
+        goto fail_init;
+    }
+
+    /* drm_fd */
+    info->drm_fd = open (deviceName, O_RDWR);
+    if (info->drm_fd < 0)
+    {
+        fprintf (stderr, "[UTILX] fail : open drm device (%s)\n", deviceName);
+        goto fail_init;
+    }
+
+    /* get the drm magic */
+    drmGetMagic(info->drm_fd, &magic);
+    if (!DRI2Authenticate(info->dpy, RootWindow(info->dpy, screen), magic))
+    {
+        fprintf (stderr, "[UTILX] fail : DRI2Authenticate (%d)\n", magic);
+        goto fail_init;
+    }
+
+    /* bufmgr */
+    info->bufmgr = drm_slp_bufmgr_init (info->drm_fd, NULL);
+    if (!info->bufmgr)
+    {
+        fprintf (stderr, "[UTILX] fail : init buffer manager \n");
+        goto fail_init;
+    }
+
+    DRI2CreateDrawable (info->dpy, info->pixmap);
+
+    attachments[0] = DRI2BufferFrontLeft;
+    dri2_count = 1;
+    info->dri2_buffers = DRI2GetBuffers (info->dpy, info->pixmap, &dri2_width, &dri2_height,
+                                         attachments, dri2_count, &dri2_out_count);
+
+    if (!info->dri2_buffers)
+    {
+        fprintf (stderr, "[UTILX] fail : get buffers\n");
+        goto fail_init;
+    }
+
+    if (!info->dri2_buffers[0].name)
+    {
+        fprintf (stderr, "[UTILX] fail : a handle of the dri2 buffer is null \n ");
+        goto fail_init;
+    }
+
+    info->bo = drm_slp_bo_import (info->bufmgr, info->dri2_buffers[0].name);
+    if (!info->bo)
+    {
+        fprintf (stderr, "[UTILX] fail : import bo (key:%d)\n", info->dri2_buffers[0].name);
+        goto fail_init;
+    }
+
+    dri2_stride = info->dri2_buffers[0].pitch;
+
+    /* virtual */
+    info->virtual = (void*)drm_slp_bo_get_handle (info->bo, DRM_SLP_DEVICE_CPU);
+    if (!info->virtual)
+    {
+        fprintf (stderr, "[UTILX] fail : map \n");
+        goto fail_init;
+    }
+
+    if (!XDamageQueryExtension(info->dpy, &info->damage_base, &damage_err_base))
+        goto fail_init;
+
+    info->damage = XDamageCreate (info->dpy, info->pixmap, XDamageReportNonEmpty);
+    if (info->damage <= 0)
+    {
+        fprintf (stderr, "[UTILX] fail : create damage \n");
+        goto fail_init;
+    }
+
+    XFlush (info->dpy);
+
+    return info;
+
+fail_init:
+    _deinit_screen_shot (info);
+    return NULL;
+}
+
+API void*
+utilx_create_screen_shot (Display* dpy, int width, int height)
+{
+    ShotInfo *info;
+    XEvent ev;
+
+    if (dpy <= 0)
+    {
+        fprintf (stderr, "[UTILX] invalid display(%p) \n", dpy);
+        return NULL;
+    }
+
+    if (width <= 0 || height <= 0)
+    {
+        fprintf (stderr, "[UTILX] invalid size(%dx%d) \n", width, height);
+        return NULL;
+    }
+
+    info = _init_screen_shot (dpy, width, height);
+    if (!info)
+    {
+        fprintf (stderr, "[UTILX] fail : initialize screenshot. \n");
+        return NULL;
+    }
+
+    XSync (info->dpy, 0);
+
+    XvGetStill (info->dpy, info->port, info->pixmap, info->gc,
+                0, 0, info->width, info->height,
+                0, 0, info->width, info->height);
+
+    XSync (info->dpy, 0);
+
+    XNextEvent (info->dpy, &ev); /* wating for x event */
+
+    if (ev.type == (info->damage_base + XDamageNotify))
+    {
+        XDamageNotifyEvent *damage_ev = (XDamageNotifyEvent *)&ev;
+        if (damage_ev->drawable == info->pixmap)
+        {
+            XDamageSubtract (info->dpy, info->damage, None, None );
+            return info->virtual;
+        }
+
+        XDamageSubtract (info->dpy, info->damage, None, None );
+    }
+
+    utilx_release_screen_shot ();
+
+    return NULL;
+}
+
+API void
+utilx_release_screen_shot (void)
+{
+    _deinit_screen_shot (shot_info);
 }

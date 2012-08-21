@@ -1,7 +1,7 @@
 /*
  * libslp-utilx
  *
-   Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved 
+   Copyright (c) 2012 Samsung Electronics Co., Ltd All Rights Reserved
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -120,6 +120,29 @@ extern "C" {
 #define STR_ATOM_GRAB_EXCL_WIN	"_GRAB_EXCL_WIN_KEYCODE"	/**< this means that the key was grabbed by a client window in EXCLUSIVE mod */
 #define STR_ATOM_GRAB_OR_EXCL_WIN	"_GRAB_OR_EXCL_WIN_KEYCODE"	/**< this means that the key was grabbed by a client window in OR_EXCLUSIVE mod */
 
+#define STR_ATOM_SCRNCONF_STATUS "_SCRNCONF_STATUS" /**< this is an XATOM for getting the status of the screen configuration through the client message */
+
+/**
+ * @brief Enumeration of screen configuration status
+ */
+typedef enum _Utilx_Scrnconf_Status
+{
+	UTILX_SCRNCONF_STATUS_NULL,    /**< screen configuration status is null */
+	UTILX_SCRNCONF_STATUS_CONNECT, /**< screen configuration status is connect */
+	UTILX_SCRNCONF_STATUS_ACTIVE   /**< screen configuration status is active */
+} Utilx_Scrnconf_Status;
+
+/**
+ * @brief Enumeration of screen configuration display mode
+ */
+typedef enum _Utilx_Scrnconf_Dispmode
+{
+	UTILX_SCRNCONF_DISPMODE_NULL,    /**< display mode of screen configuration is null */
+	UTILX_SCRNCONF_DISPMODE_CLONE,   /**< display mode of screen configuration is clone */
+	UTILX_SCRNCONF_DISPMODE_EXTENDED /**< display mode of screen configuration is extended */
+} Utilx_Scrnconf_Dispmode;
+
+
 /**
  * @brief Enumeration of key status
  */
@@ -180,6 +203,145 @@ typedef enum _Utilx_Opaque_State
 	UTILX_OPAQUE_STATE_OFF = 0, /**< Transparent state */
 	UTILX_OPAQUE_STATE_ON  = 1, /**< Opaque state */
 } Utilx_Opaque_State;
+
+/**
+ * @brief Structure of screen configuration information
+ */
+typedef struct _UtilxScrnConf
+{
+	char *str_output;                 /**< string value for the connector type */
+	Utilx_Scrnconf_Status status;     /**< status of screen configurtaion */
+	char *str_resolution;             /**< string value for the resolution to be active status */
+	Utilx_Scrnconf_Dispmode dispmode; /**< display mode of screen configuration to be active status */
+} UtilxScrnConf;
+
+/**
+ * @fn ScrnConf *utilx_scrnconf_allocate(void)
+ * @brief allocate the UtilxScrnConf structure
+ *
+ * This function allocate the UtilxScrnConf structure.\n
+ *
+ * @remark This is used only application which want to know the screen configuration info.
+ * @pre  This api does not require any pre-condition.
+ * @post This api does not change any condition.
+ * @see utilx_scrnconf_allocate
+ * @par Example
+  @code
+  #include <utilX.h>
+  ...
+
+  UtilxScrnConf *scrnconf = NULL;
+
+  // Allocate the UtilxScrnConf structure
+  scrnconf = utilx_scrnconf_allocate();
+   ...
+  @endcode
+ */
+UtilxScrnConf *utilx_scrnconf_allocate (void);
+
+/**
+ * @fn void utilx_scrnconf_free (UtilxScrnConf *scrnconf)
+ * @brief free the UtilxScrnConf structure
+ *
+ * This function free the UtilxScrnConf structure.\n
+ *
+ * @param[in] scrnconf Specifies the UtilxScrnConf structure
+ * @return instance of the UtilxScrnConf structure
+ * @remark This is used only application which want to know the screen configuration info.
+ * @pre  This api does not require any pre-condition.
+ * @post This api does not change any condition.
+ * @see utilx_scrnconf_free
+ * @par Example
+  @code
+  #include <utilX.h>
+  ...
+
+  UtilxScrnConf *scrnconf = NULL;
+
+  // Allocate the UtilxScrnConf structure
+  scrnconf = utilx_scrnconf_allocate();
+   ...
+
+  // Free the UtilxScrnConf structure
+  utilx_scrnconf_free(scrnconf);
+   ...
+  @endcode
+ */
+void utilx_scrnconf_free (UtilxScrnConf *scrnconf);
+
+/**
+ * @fn void utilx_scrnconf_get_info (Display *dpy, UtilxScrnConf *scrnconf)
+ * @brief get the information of the screen configuration
+ *
+ * This function get the information of the screen configuration.\n
+ *
+ * This function is a asynchronous call.
+ *
+ * @param[in] dpy Specifies the connection to the X server
+ * @param[in] scrnconf Specifies the information structure of the screen configuration
+ * @remark This is used only application which want to know the screen configuration info.
+ * @pre  This api does not require any pre-condition.
+ * @post This api does not change any condition.
+ * @see utilx_scrnconf_get_info
+ * @par Example
+  @code
+  #include <X11/Xlib.h>
+  #include <utilX.h>
+  ...
+
+  Display* dpy;
+  UtilxScrnConf *scrnconf = NULL;
+
+  dpy = XOpenDisplay (NULL);
+
+  // Allocate the UtilxScrnConf structure
+  scrnconf = utilx_scrnconf_allocate();
+  ...
+
+  // Set the display mode for the screen configuration
+  utilx_scrnconf_get_info (dpy, scrnconf);
+   ...
+
+  // Free the UtilxScrnConf structure
+  utilx_scrnconf_free(scrnconf);
+   ...
+
+  @endcode
+ */
+void utilx_scrnconf_get_info (Display *dpy, UtilxScrnConf *scrnconf);
+
+
+/**
+ * @fn void utilx_scrnconf_set_dispmode (Display *dpy, Utilx_Scrnconf_Dispmode dispmode)
+ * @brief set the display mode for the screen configuration
+ *
+ * This function set the display mode for the screen configuration.\n
+ *
+ * This function is a asynchronous call.
+ *
+ * @param[in] dpy Specifies the connection to the X server
+ * @param[in] dipmode Specifies the display mode of the screen configuration
+ * @return 1 if setting the dispmode is succeeded, 0 if setting the dispmode is failed.
+ * @remark This is used only application which want to set the display mode of the screen configuration.
+ * @pre  This api does not require any pre-condition.
+ * @post This api does not change any condition.
+ * @see utilx_scrnconf_set_dispmode
+ * @par Example
+  @code
+  #include <X11/Xlib.h>
+  #include <utilX.h>
+  ...
+
+  Display* dpy;
+
+  dpy = XOpenDisplay (NULL);
+
+  // Set the display mode for the screen configuration
+  utilx_scrnconf_set_dispmode (dpy, UTILX_SCRNCONF_DISPMODE_CLONE);
+   ...
+  @endcode
+ */
+int utilx_scrnconf_set_dispmode (Display *dpy, Utilx_Scrnconf_Dispmode dispmode);
 
 
 /**
@@ -1324,6 +1486,70 @@ int utilx_get_window_cardinal_property(Display* dpy, Window win, Atom atom, unsi
   @endcode
  */
 void utilx_show_capture_effect(Display *dpy, Window win );
+
+/**
+ * @fn void* utilx_create_screen_shot (Display* dpy, int width, int height)
+ * @brief Create a screenshot image.
+ *
+ * This function create a screenshot image.\n
+ * To use this function, you should get the permission first. After finishing,
+ * utilx_release_screen_shot should be called.
+ *
+ * @param[in] dpy Specifies the connection to the X server
+ * @param[in] width Specifies the root window handle
+ * @param[in] height Specifies the root window handle
+ * @remark You should get the permission to use.
+ * @post This api does not change any condition.
+ * @see utilx_release_screen_shot
+ * @par Example
+  @code
+    Display* dpy;
+    int width, height;
+    void *dump;
+
+    dpy = XOpenDisplay (NULL);
+    width = DisplayWidth (dpy, DefaultScreen (dpy));
+    height = DisplayHeight (dpy, DefaultScreen (dpy));
+
+    dump = utilx_create_screen_shot (dpy, width, height);
+    if (dump)
+    {
+        // do_something (dump);
+    }
+
+    utilx_release_screen_shot ();
+  @endcode
+ */
+void* utilx_create_screen_shot (Display* dpy, int width, int height);
+
+/**
+ * @fn void  utilx_release_screen_shot (void)
+ * @brief Release screenshot resources.
+ *
+ * This function release screenshot resources.\n
+ * utilx_release_screen_shot should be called after finsining screenshot.
+ *
+ * @see utilx_create_screen_shot
+ * @par Example
+  @code
+    Display* dpy;
+    int width, height;
+    void *dump;
+
+    dpy = XOpenDisplay (NULL);
+    width = DisplayWidth (dpy, DefaultScreen (dpy));
+    height = DisplayHeight (dpy, DefaultScreen (dpy));
+
+    dump = utilx_create_screen_shot (dpy, width, height);
+    if (dump)
+    {
+        // do_something (dump);
+    }
+
+    utilx_release_screen_shot ();
+  @endcode
+ */
+void  utilx_release_screen_shot (void);
 
 #ifdef __cplusplus
 }
