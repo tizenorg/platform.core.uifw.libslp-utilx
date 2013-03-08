@@ -1452,6 +1452,7 @@ typedef struct _ShotInfo
 #define FOURCC(a,b,c,d) (((unsigned)d&0xff)<<24 | ((unsigned)c&0xff)<<16 | ((unsigned)b&0xff)<<8 | ((unsigned)a&0xff))
 
 #define FOURCC_RGB32    FOURCC('R','G','B','4')
+#define TIMEOUT_CAPTURE 3
 
     /* x error handling */
 static Bool x_error_caught;
@@ -1560,6 +1561,8 @@ _deinit_screen_shot (ShotInfo *info)
         XFreePixmap (info->dpy, info->pixmap);
     if (info->port > 0)
         XvUngrabPort (info->dpy, info->port, 0);
+
+    XSync (info->dpy, False);
 
     free (info);
     shot_info = NULL;
@@ -1775,6 +1778,8 @@ _init_screen_shot (Display* dpy, unsigned int width, unsigned int height)
 {
     ShotInfo *info = NULL;
     static Atom atom_capture = None;
+    static Atom atom_fps = None;
+    XErrorHandler old_handler = NULL;
 
     if (shot_info)
     {
@@ -1804,8 +1809,19 @@ _init_screen_shot (Display* dpy, unsigned int width, unsigned int height)
     /* width, height */
     if (atom_capture == None)
         atom_capture = XInternAtom (info->dpy, "_USER_WM_PORT_ATTRIBUTE_CAPTURE", False);
+    if (atom_fps == None)
+        atom_fps = XInternAtom (info->dpy, "_USER_WM_PORT_ATTRIBUTE_FPS", False);
+
+    XSync (info->dpy, 0);
+    x_error_caught = False;
+    old_handler = XSetErrorHandler (_screen_shot_x_error_handle);
 
     XvSetPortAttribute (info->dpy, info->port, atom_capture, 1);
+    XvSetPortAttribute (info->dpy, info->port, atom_fps, 60);
+
+    x_error_caught = False;
+    XSetErrorHandler (old_handler);
+
     XvQueryBestSize (info->dpy, info->port, 0, 0, 0, width, height, &width, &height);
     if (width <= 0 || height <= 0)
         goto fail_init;
@@ -1864,7 +1880,7 @@ API void*
 utilx_create_screen_shot (Display* dpy, int width, int height)
 {
     ShotInfo *info;
-    XEvent ev;
+    XEvent ev = {0,};
     XErrorHandler old_handler = NULL;
 
     if (dpy == NULL)
@@ -1908,7 +1924,31 @@ utilx_create_screen_shot (Display* dpy, int width, int height)
     x_error_caught = False;
     XSetErrorHandler (old_handler);
 
-    XNextEvent (info->dpy, &ev); /* wating for x event */
+    if (XPending (info->dpy))
+        XNextEvent (info->dpy, &ev);
+    else
+    {
+        int fd = ConnectionNumber (info->dpy);
+        fd_set mask;
+        struct timeval tv;
+        int ret;
+
+        FD_ZERO (&mask);
+        FD_SET (fd, &mask);
+
+        tv.tv_usec = 0;
+        tv.tv_sec = TIMEOUT_CAPTURE;
+
+        ret = select (fd + 1, &mask, 0, 0, &tv);
+        if (ret < 0)
+            fprintf (stderr, "[UTILX] fail: select.\n");
+        else if (ret == 0)
+            fprintf (stderr, "[UTILX] timeout(%d sec)!\n", TIMEOUT_CAPTURE);
+        else if (XPending (info->dpy))
+            XNextEvent (info->dpy, &ev);
+        else
+            fprintf (stderr, "[UTILX] fail: not passed a event!\n");
+    }
 
     if (ev.type == (info->damage_base + XDamageNotify))
     {

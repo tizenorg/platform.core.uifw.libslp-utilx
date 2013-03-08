@@ -1,7 +1,7 @@
 #sbs-git:slp/pkgs/l/libslp-utilx libslp-utilx 0.1.7 5957503c84e65113399e346c7d5618e73957d6ff
 Name:       libslp-utilx
 Summary:    utilX
-Version:    0.1.19
+Version:    0.1.20
 Release:    1.1
 Group:      System/Libraries
 License:    Apache-2.0
