@@ -37,8 +37,9 @@
 #include <X11/extensions/Xvproto.h>
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/XShm.h>
+#include <xf86drm.h>
+#include <tbm_bufmgr.h>
 #include <dri2.h>
-#include <drm_slp_bufmgr.h>
 
 
 #define UTILX_DEBUG 0
@@ -1437,10 +1438,10 @@ typedef struct _ShotInfo
 
     /* Dri2 */
     int      drm_fd;
-    drm_slp_bufmgr bufmgr;
+    tbm_bufmgr bufmgr;
     void    *virtual;
     DRI2Buffer* dri2_buffers;
-    drm_slp_bo bo;
+    tbm_bo bo;
 
     /* XShm */
     Bool       enable_xshm;
@@ -1542,11 +1543,11 @@ _deinit_screen_shot (ShotInfo *info)
     }
 
     if (info->bo)
-        drm_slp_bo_unref(info->bo);
+        tbm_bo_unref(info->bo);
     if (info->dri2_buffers)
         free(info->dri2_buffers);
     if (info->bufmgr)
-        drm_slp_bufmgr_destroy (info->bufmgr);
+        tbm_bufmgr_deinit (info->bufmgr);
     if (info->drm_fd >= 0)
         close (info->drm_fd);
 
@@ -1567,13 +1568,8 @@ _deinit_screen_shot (ShotInfo *info)
 static int
 _screen_shot_x_error_handle (Display *dpy, XErrorEvent *ev)
 {
-    char error_msg[1024];
-
     if (!shot_info || (dpy != shot_info->dpy))
         return 0;
-
-    XGetErrorText (dpy, ev->error_code, error_msg, 1024);
-    fprintf (stderr, "[UTILX] get XError: %s\n", error_msg);
 
     x_error_caught = True;
 
@@ -1613,6 +1609,7 @@ _init_screen_shot_dri2 (ShotInfo *info)
     int dri2_count, dri2_out_count;
     int dri2_width, dri2_height, dri2_stride;
     drm_magic_t magic;
+    tbm_bo_handle bo_handle;
 
     screen = DefaultScreen(info->dpy);
     if (!DRI2QueryExtension (info->dpy, &dri2_base, &dri2_err_base))
@@ -1650,7 +1647,7 @@ _init_screen_shot_dri2 (ShotInfo *info)
     }
 
     /* bufmgr */
-    info->bufmgr = drm_slp_bufmgr_init (info->drm_fd, NULL);
+    info->bufmgr = tbm_bufmgr_init (info->drm_fd);
     if (!info->bufmgr)
     {
         fprintf (stderr, "[UTILX] fail : init buffer manager \n");
@@ -1676,7 +1673,7 @@ _init_screen_shot_dri2 (ShotInfo *info)
         goto fail_init_dri2;
     }
 
-    info->bo = drm_slp_bo_import (info->bufmgr, info->dri2_buffers[0].name);
+    info->bo = tbm_bo_import (info->bufmgr, info->dri2_buffers[0].name);
     if (!info->bo)
     {
         fprintf (stderr, "[UTILX] fail : import bo (key:%d)\n", info->dri2_buffers[0].name);
@@ -1686,7 +1683,8 @@ _init_screen_shot_dri2 (ShotInfo *info)
     dri2_stride = info->dri2_buffers[0].pitch;
 
     /* virtual */
-    info->virtual = (void*)drm_slp_bo_get_handle (info->bo, DRM_SLP_DEVICE_CPU);
+    bo_handle = tbm_bo_get_handle (info->bo, TBM_DEVICE_CPU);
+    info->virtual = (void *)bo_handle.ptr;
     if (!info->virtual)
     {
         fprintf (stderr, "[UTILX] fail : map \n");
@@ -1700,11 +1698,11 @@ _init_screen_shot_dri2 (ShotInfo *info)
 fail_init_dri2:
 
     if (info->bo)
-        drm_slp_bo_unref(info->bo);
+        tbm_bo_unref(info->bo);
     if (info->dri2_buffers)
         free(info->dri2_buffers);
     if (info->bufmgr)
-        drm_slp_bufmgr_destroy (info->bufmgr);
+        tbm_bufmgr_deinit (info->bufmgr);
     if (info->drm_fd >= 0)
         close (info->drm_fd);
 
@@ -1827,7 +1825,7 @@ _init_screen_shot (Display* dpy, unsigned int width, unsigned int height)
 
     /* gc */
     info->gc = XCreateGC (info->dpy, info->pixmap, 0, 0);
-    if (info->gc <= 0)
+    if (info->gc == NULL)
     {
         fprintf (stderr, "[UTILX] fail : create gc. \n");
         goto fail_init;
@@ -1869,7 +1867,7 @@ utilx_create_screen_shot (Display* dpy, int width, int height)
     XEvent ev;
     XErrorHandler old_handler = NULL;
 
-    if (dpy <= 0)
+    if (dpy == NULL)
     {
         fprintf (stderr, "[UTILX] invalid display(%p) \n", dpy);
         return NULL;
@@ -1904,7 +1902,6 @@ utilx_create_screen_shot (Display* dpy, int width, int height)
     {
         x_error_caught = False;
         XSetErrorHandler (old_handler);
-        fprintf (stderr, "[UTILX] fail : GetStill. \n");
         return NULL;
     }
 

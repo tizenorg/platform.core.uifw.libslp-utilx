@@ -14,7 +14,7 @@ SET(VERSION "${VERSION_MAJOR}.1.0")
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 
 INCLUDE(FindPkgConfig)
-pkg_check_modules(pkgs REQUIRED x11 xext xv xdamage libdrm libdrm_slp libdri2 xrandr)
+pkg_check_modules(pkgs REQUIRED x11 xext xv xdamage libdrm libtbm libdri2 xrandr)
 
 FOREACH(flag ${pkgs_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
