@@ -1,13 +1,10 @@
-#sbs-git:slp/pkgs/l/libslp-utilx libslp-utilx 0.1.7 5957503c84e65113399e346c7d5618e73957d6ff
 Name:       libslp-utilx
 Summary:    utilX
 Version:    0.1.20
 Release:    1.1
-Group:      System/Libraries
+Group:      UI Framework/Libraries
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 
 BuildRequires: cmake
 BuildRequires: pkgconfig(libdri2)
@@ -37,7 +34,7 @@ Utility functions for the XWindow (developement files)
 
 
 %build
-cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix}
+%cmake .
 
 
 make %{?jobs:-j%jobs}
@@ -57,14 +54,14 @@ cp %{_builddir}/%{buildsubdir}/LICENSE.APLv2 %{buildroot}/usr/share/license/%{na
 
 %files
 %defattr(-,root,root,-)
-/usr/lib/libutilX.so.*
+%{_libdir}/libutilX.so.*
 /usr/share/license/%{name}
 
 %files devel
 %defattr(-,root,root,-)
 /usr/include/utilX.h
-/usr/lib/libutilX.so
-/usr/lib/pkgconfig/utilX.pc
+%{_libdir}/libutilX.so
+%{_libdir}/pkgconfig/utilX.pc
 
 
 
