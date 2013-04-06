@@ -91,6 +91,10 @@ extern "C" {
 #define KEY_SOFTKBD			"XF86MenuKB"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Soft keyboard(toggle)' key */
 #define KEY_QUICKPANEL		"XF86Tools"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Quick panel(toggle)' key */
 #define KEY_TASKSWITCH		"XF86TaskPane"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Task switcher(toggle)' key */
+#define KEY_APPS		"XF86Launch0"	/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Apptray(toggle)' key */
+#define KEY_SEARCH		"XF86Search"		/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Search(toggle)' key */
+#define KEY_VOICE		"XF86Launch2"		/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Voice(toggle)' key */
+#define KEY_LANGUAGE		"Hangul"		/**< this macro means the XKeySym (XServer Key Symbol) corresponds to 'Language(toggle)' key */
 
 #define LEN_KEY_VOLUMEUP		20	/**< this macro is the length of string corresponds to 'Volume Up' key */
 #define LEN_KEY_VOLUMEDOWN	20	/**< this macro is the length of string corresponds to 'Volume Down' key */
@@ -134,6 +138,10 @@ extern "C" {
 #define LEN_KEY_SOFTKBD		10	/**< this macro is the length of string corresponds to 'Soft keyboard(toggle)' key */
 #define LEN_KEY_QUICKPANEL		9	/**< this macro is the length of string corresponds to 'Quick panel(toggle)' key */
 #define LEN_KEY_TASKSWITCH	12	/**< this macro is the length of string corresponds to 'Task switcher(toggle)' key */
+#define LEN_KEY_APPS			11	/**< this macro is the length of string corresponds to 'Apptray(toggle)' key */
+#define LEN_KEY_SEARCH			10	/**< this macro is the length of string corresponds to 'Search(toggle)' key */
+#define LEN_KEY_VOICE			11	/**< this macro is the length of string corresponds to 'Voice(toggle)' key */
+#define LEN_KEY_LANGUAGE		6	/**< this macro is the length of string corresponds to 'Language(toggle)' key */
 
 #define OR_EXCLUSIVE_GRAB	0xf00000	/**< this means that the client window will always get the grabbed-key exclusively regardless of the position on the window stack but the grab is overridable by the other client window */
 #define EXCLUSIVE_GRAB		0x0f0000	/**< this means that the client window will always get the grabbed-key exclusively regardless of the position on the window stack */
