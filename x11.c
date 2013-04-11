@@ -1897,9 +1897,6 @@ utilx_create_screen_shot (Display* dpy, int width, int height)
 
     XSync (dpy, 0);
 
-    x_error_caught = False;
-    old_handler = XSetErrorHandler (_screen_shot_x_error_handle);
-
     info = _init_screen_shot (dpy, width, height);
 
     if (!info)
@@ -1907,6 +1904,11 @@ utilx_create_screen_shot (Display* dpy, int width, int height)
         fprintf (stderr, "[UTILX] fail : initialize screenshot. \n");
         return NULL;
     }
+
+    XSync (dpy, 0);
+
+    x_error_caught = False;
+    old_handler = XSetErrorHandler (_screen_shot_x_error_handle);
 
     XvGetStill (info->dpy, info->port, info->pixmap, info->gc,
                 0, 0, info->width, info->height,
