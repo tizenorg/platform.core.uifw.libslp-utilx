@@ -1425,7 +1425,7 @@ typedef struct _ShotInfo
 {
     Display *dpy;
 
-    /* GetStill */
+    /* PutImage */
     int      port;
     unsigned int width;
     unsigned int height;
@@ -1491,7 +1491,8 @@ _get_port (Display *dpy, unsigned int id)
     {
         int support_format = False;
 
-        if (!(ai[i].type & XvStillMask))
+        if (!(ai[i].type & XvInputMask) ||
+            !(ai[i].type & XvStillMask))
             continue;
 
         p = ai[i].base_id;
@@ -1819,6 +1820,8 @@ _init_screen_shot (Display* dpy, unsigned int width, unsigned int height)
     XvSetPortAttribute (info->dpy, info->port, atom_capture, 1);
     XvSetPortAttribute (info->dpy, info->port, atom_fps, 60);
 
+    XSync (info->dpy, 0);
+
     x_error_caught = False;
     XSetErrorHandler (old_handler);
 
@@ -1910,7 +1913,7 @@ utilx_create_screen_shot (Display* dpy, int width, int height)
     x_error_caught = False;
     old_handler = XSetErrorHandler (_screen_shot_x_error_handle);
 
-    XvGetStill (info->dpy, info->port, info->pixmap, info->gc,
+    XvPutStill (info->dpy, info->port, info->pixmap, info->gc,
                 0, 0, info->width, info->height,
                 0, 0, info->width, info->height);
 
