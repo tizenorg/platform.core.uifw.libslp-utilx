@@ -466,10 +466,6 @@ static void _set_exclusive_grab_info_to_root (Display *disp, int keycode, Window
 		goto out;
 	}
 
-#ifdef __DEBUG__
-	printf("[%s] keycode = %d\n", __FUNCTION__, keycode);
-#endif
-
 	for( i=0 ; i < nr_item ; i++ )
 	{
 		if( key_list && (key_list[i] == keycode) )
@@ -523,7 +519,6 @@ static void _unset_exclusive_grab_info_to_root (Display *disp, int keycode, int 
 
 	if (nr_item == 0)
 	{
-		fprintf(stderr, "[32m[utilX][%s] keycode = %d[0m\n", __FUNCTION__, keycode);
 		goto out;
 	}
 
@@ -535,10 +530,6 @@ static void _unset_exclusive_grab_info_to_root (Display *disp, int keycode, int 
 		}
 		cnt++;
 	}
-
-#ifdef __DEBUG__
-	fprintf(stderr, "[utilX][%s] cnt = %d, nr_item = %d\n", __FUNCTION__, cnt, nr_item);
-#endif
 
 	if( 0 < cnt )
 	{
@@ -661,13 +652,8 @@ API int utilx_grab_key (Display* disp, Window win, const char* key, int grab_mod
 		//Window grabWin;
 		result = _is_grabbed_key_exclusively(disp, keycode, grab_mode);
 
-#ifdef __DEBUG__
-		printf("[%s] _is_grabbed_key_exclusively returns result = %d\n", __FUNCTION__, result);
-#endif
-
 		if( result )
 		{
-			fprintf(stderr, "[%s] keycode(%d) was already grabbed exclusively (grab_mode=0x%X) !\n", __FUNCTION__, keycode, grab_mode);
 			goto out;
 		}
 	}
@@ -677,8 +663,6 @@ API int utilx_grab_key (Display* disp, Window win, const char* key, int grab_mod
 
 		if( result )
 		{
-			fprintf(stderr, "[%s] Keycode(%d) was already grabbed with overridable exclusive mode (grab_mode=0x%x)\n", __FUNCTION__, keycode, grab_mode);
-			fprintf(stderr, "[%s] Now it will be overridden by a new window(0x%x) !\n", __FUNCTION__, win);
 			utilx_ungrab_key(disp, win, key);
 		}
 	}
@@ -706,9 +690,6 @@ API int utilx_grab_key (Display* disp, Window win, const char* key, int grab_mod
 			cnt ? PropModeAppend : PropModeReplace, (unsigned char *)&keycode, 1);
 	XSync(disp, False);
 	keycode = keycode & (~GRAB_MODE_MASK);
-#ifdef __DEBUG__
-	printf("[%s] keycode = %d\n", __FUNCTION__, keycode);
-#endif
 
 	if( EXCLUSIVE_GRAB == grab_mode || OR_EXCLUSIVE_GRAB == grab_mode )
 		_set_exclusive_grab_info_to_root(disp, keycode, win, grab_mode);
