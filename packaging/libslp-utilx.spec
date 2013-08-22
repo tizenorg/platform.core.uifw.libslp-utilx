@@ -1,6 +1,6 @@
 Name:       libslp-utilx
 Summary:    utilX
-Version:    0.1.23
+Version:    0.1.24
 Release:    1.1
 Group:      UI Framework/Libraries
 License:    Apache-2.0
