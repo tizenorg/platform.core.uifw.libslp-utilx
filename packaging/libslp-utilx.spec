@@ -1,3 +1,5 @@
+%bcond_with x
+
 Name:       libslp-utilx
 Summary:    utilX
 Version:    0.1.24
@@ -17,6 +19,10 @@ BuildRequires: pkgconfig(xdamage)
 BuildRequires: pkgconfig(xrandr)
 BuildRequires: pkgconfig(libdrm)
 BuildRequires: pkgconfig(libtbm)
+
+%if !%{with x}
+ExclusiveArch:
+%endif
 
 %description
 Utility functions for the XWindow
