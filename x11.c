@@ -1615,6 +1615,12 @@ _init_screen_shot_dri2 (ShotInfo *info)
         goto fail_init_dri2;
     }
 
+    if (!driverName || !deviceName)
+    {
+        fprintf (stderr, "[UTILX] fail : Get DRI info !!\n");
+        goto fail_init_dri2;
+    }
+
     /* drm_fd */
     info->drm_fd = open (deviceName, O_RDWR);
     if (info->drm_fd < 0)
@@ -1678,6 +1684,9 @@ _init_screen_shot_dri2 (ShotInfo *info)
 
     info->enable_xshm = False;
 
+    free (driverName);
+    free (deviceName);
+
     return True;
 
 fail_init_dri2:
@@ -1690,6 +1699,11 @@ fail_init_dri2:
         tbm_bufmgr_deinit (info->bufmgr);
     if (info->drm_fd >= 0)
         close (info->drm_fd);
+
+    if (driverName)
+        free (driverName);
+    if (deviceName)
+        free (deviceName);
 
     return False;
 }
