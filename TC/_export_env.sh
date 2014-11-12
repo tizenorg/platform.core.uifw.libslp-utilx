@@ -1,6 +1,7 @@
 #!/bin/sh
 
-. ./config
+source ./config
+
 export TET_INSTALL_PATH=$TET_INSTALL_HOST_PATH # tetware root path
 export TET_TARGET_PATH=$TET_INSTALL_PATH/tetware-target # tetware target path
 export PATH=$TET_TARGET_PATH/bin:$PATH

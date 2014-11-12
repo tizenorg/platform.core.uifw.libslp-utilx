@@ -1,1 +1,5 @@
-/testcase/utc_utilx_test
+/testcase/utc_utilx_key_grab_test
+/testcase/utc_utilx_notification_level_test
+/testcase/utc_utilx_screen_shot_test
+/testcase/utc_utilx_opaque_test
+

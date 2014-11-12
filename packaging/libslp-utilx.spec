@@ -2,8 +2,8 @@
 
 Name:       libslp-utilx
 Summary:    utilX
-Version:    0.1.24
-Release:    1.1
+Version:    0.4.5
+Release:    1
 Group:      UI Framework/Libraries
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
@@ -32,6 +32,8 @@ Utility functions for the XWindow
 Summary:    utilX
 Group:      Development/Libraries
 Requires:   %{name} = %{version}-%{release}
+Requires:   pkgconfig(xproto)
+Requires:   pkgconfig(x11)
 
 %description devel
 Utility functions for the XWindow (developement files)
@@ -69,7 +71,7 @@ cp %{_builddir}/%{buildsubdir}/LICENSE.APLv2 %{buildroot}/usr/share/license/%{na
 %files devel
 %manifest %{name}.manifest
 %defattr(-,root,root,-)
-/usr/include/utilX.h
+/usr/include/*
 %{_libdir}/libutilX.so
 %{_libdir}/pkgconfig/utilX.pc
 

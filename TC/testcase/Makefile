@@ -1,20 +1,21 @@
-CC = gcc
+include ../config
+
+CC ?= gcc
 
 C_FILES = $(shell ls *.c)
 
-PKGS = elementary ecore-x ecore evas x11 dlog glib-2.0 utilX
-
+PKGS = $(PKG_NAME)
+PKGS += glib-2.0
+PKGS += ecore-x ecore-evas x11 ecore
+LDFLAGS = `pkg-config --libs $(PKGS)`
 LDFLAGS += $(TET_ROOT)/lib/tet3/tcm_s.o
 LDFLAGS += -L$(TET_ROOT)/lib/tet3 -ltcm_s
 LDFLAGS += -L$(TET_ROOT)/lib/tet3 -lapi_s
-LDFLAGS += `pkg-config --libs $(PKGS)`
 
-CFLAGS += `pkg-config --cflags $(PKGS)`
-CFLAGS += -I.
+CFLAGS = -I. `pkg-config --cflags $(PKGS)`
 CFLAGS += -I$(TET_ROOT)/inc/tet3
 CFLAGS += -Wall
 
-#TARGETS = $(C_FILES:%.c=tc-%)
 TCS := $(shell ls -1 *.c | cut -d. -f1)
 
 all: $(TCS)

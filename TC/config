@@ -1,2 +1,3 @@
-TET_INSTALL_HOST_PATH=/home/nfs_mount/TETware
-TET_INSTALL_TARGET_PATH=/mnt/nfs/TETware
+PKG_NAME=utilX
+TET_INSTALL_HOST_PATH=/var/tmp/dts_fw/TC/TETware
+TET_INSTALL_TARGET_PATH=/opt/home/$PKG_NAME/TETware
