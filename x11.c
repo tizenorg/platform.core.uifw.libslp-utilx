@@ -38,10 +38,10 @@
 #include <X11/extensions/Xvproto.h>
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/XShm.h>
+#include <X11/Xresource.h>
 #include <xf86drm.h>
 #include <tbm_bufmgr.h>
 #include <dri2.h>
-
 
 #define UTILX_DEBUG 0
 #if UTILX_DEBUG
@@ -500,6 +500,174 @@ out:
 	return result;
 }
 
+#ifndef SYSCONFDIR
+#define SYSCONFDIR "/etc/"
+#endif
+#define KEYMAP_FILE	SYSCONFDIR"/X11/xkeysymbol.map"
+#define is_space(c) ((c)==' '||(c)=='\t'||(c) =='\n')
+
+typedef struct _Symbol_Entry
+{
+	char name[64];
+	char symbol[64];
+	XrmQuark quark;
+	struct _Symbol_Entry *next;
+} Symbol_Entry;
+
+static Symbol_Entry *symbol_list;
+static int symbol_list_len;
+
+static char*
+_utilx_strip_whitespace(char *s)
+{
+    int i;
+
+    while (s[0] && is_space(s[0]))
+        s++;
+
+    i = strlen(s) - 1;
+    while (i >= 0 && is_space(s[i]))
+        s[i--] = 0;
+
+    return s;
+}
+
+static int
+_utilx_check_key_symbol_list (char *path)
+{
+	FILE *f;
+    char *stripped, *comma, *key, *value;
+    char buf[256];
+	int line;
+	Symbol_Entry *cursor;
+
+	if (symbol_list)
+		return 1;
+
+	f = fopen(path, "r");
+	if (!f)	{
+        fprintf (stderr, "[utilx] '%s' open failed: %s\n", path, strerror(errno));
+		return 0;
+	}
+
+	line = 0;
+	symbol_list_len = 0;
+
+	cursor = NULL;
+    while (fgets(buf, sizeof(buf), f)) {
+		Symbol_Entry *entry;
+
+        line++;
+
+        stripped = _utilx_strip_whitespace (buf);
+        if (stripped[0] == '#' || stripped[0] == 0)
+            continue;
+
+        comma = strchr(stripped, ',');
+        if (!comma)
+		{
+            fprintf(stderr, "[utilx] Syntax error at %s line %d\n", path, line);
+            continue;
+        }
+
+        *comma = 0;
+        key   = _utilx_strip_whitespace (stripped);
+        value = _utilx_strip_whitespace (comma + 1);
+        if (!key[0])
+		{
+            fprintf (stderr, "[utilx] Missing key at %s line %d\n", path, line);
+            continue;
+        }
+        if (!value[0])
+		{
+            fprintf (stderr, "[utilx] Missing value at %s line %d\n", path, line);
+            continue;
+        }
+
+		entry = calloc (1, sizeof (Symbol_Entry));
+		if (!entry)
+			continue;
+
+		symbol_list_len++;
+
+		if (!symbol_list)
+			cursor = symbol_list = entry;
+		else if (cursor)
+		{
+			cursor->next = entry;
+			cursor = entry;
+		}
+
+		snprintf (entry->name, sizeof (entry->name), "%s", key);
+		snprintf (entry->symbol, sizeof (entry->symbol), "%s", value);
+
+		entry->quark = XrmStringToQuark (key);
+    }
+
+	fclose(f);
+
+	return 1;
+}
+
+API const char** utilx_get_available_key_names (int *count)
+{
+	char **names;
+	Symbol_Entry *entry;
+	int i;
+
+	if (!count)
+	{
+		fprintf(stderr, "[%s] 'count' param is NULL.\n", __FUNCTION__);
+		return NULL;
+	}
+
+	*count = 0;
+
+	if (!_utilx_check_key_symbol_list (KEYMAP_FILE))
+		return NULL;
+
+	names = calloc (symbol_list_len, sizeof (char*));
+	if (!names)
+	{
+		fprintf(stderr, "[%s] calloc failed.\n", __FUNCTION__);
+		return NULL;
+	}
+
+	*count = symbol_list_len;
+
+	i = 0;
+	entry = symbol_list;
+	while (entry && i < symbol_list_len)
+	{
+		names[i++] = entry->name;
+		entry = entry->next;
+	}
+
+	return (const char**)names;
+}
+
+API const char* utilx_get_key_symbol (const char *key_name)
+{
+	Symbol_Entry *entry;
+	XrmQuark quark;
+
+	if (!_utilx_check_key_symbol_list (KEYMAP_FILE))
+		return NULL;
+
+	quark = XrmStringToQuark (key_name);
+	entry = symbol_list;
+
+	while (entry)
+	{
+		if (entry->quark == quark)
+			return (const char*)entry->symbol;
+
+		entry = entry->next;
+	}
+
+	return NULL;
+}
+
 API int utilx_grab_key (Display* disp, Window win, const char* key, int grab_mode)
 {
 	unsigned long cnt;
@@ -512,6 +680,12 @@ API int utilx_grab_key (Display* disp, Window win, const char* key, int grab_mod
 	if( NULL == disp )
 	{
 		fprintf(stderr, "[%s] Display is NULL\n", __FUNCTION__);
+		return -1;
+	}
+
+	if( NULL == key )
+	{
+		fprintf(stderr, "[%s] key is NULL\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -590,6 +764,12 @@ API int utilx_ungrab_key (Display* disp, Window win, const char* key)
 	if( NULL == disp )
 	{
 		fprintf(stderr, "[%s] Display is NULL\n", __FUNCTION__);
+		return -1;
+	}
+
+	if( NULL == key )
+	{
+		fprintf(stderr, "[%s] key is NULL\n", __FUNCTION__);
 		return -1;
 	}
 

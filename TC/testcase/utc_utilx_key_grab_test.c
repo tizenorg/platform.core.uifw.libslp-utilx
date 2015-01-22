@@ -99,12 +99,13 @@ static void utc_utilx_grab_key_excl_p(void)
 {
 	int grab_result;
 	int ungrab_result;
+	const char *symbol = utilx_get_key_symbol("KEY_MEDIA");
 
-	grab_result = utilx_grab_key(disp, win, KEY_MEDIA, EXCLUSIVE_GRAB);
+	grab_result = utilx_grab_key(disp, win, symbol, EXCLUSIVE_GRAB);
 	if( grab_result == 0 )
 	{
 		dts_pass("utilx_grab_key", "passed");
-		ungrab_result = utilx_ungrab_key(disp, win, KEY_MEDIA);
+		ungrab_result = utilx_ungrab_key(disp, win, symbol);
 		if( ungrab_result != 0)
 			dts_fail("utilx_grab_key", "ungrab failed");
 	}
@@ -118,12 +119,13 @@ static void utc_utilx_grab_key_top_p(void)
 {
 	int grab_result;
 	int ungrab_result;
+	const char *symbol = utilx_get_key_symbol("KEY_STOPCD");
 
-	grab_result = utilx_grab_key(disp, win, KEY_STOPCD, TOP_POSITION_GRAB);
+	grab_result = utilx_grab_key(disp, win, symbol, TOP_POSITION_GRAB);
 	if( grab_result == 0 )
 	{
 		dts_pass("utilx_grab_key", "passed");
-		ungrab_result = utilx_ungrab_key(disp, win, KEY_STOPCD);
+		ungrab_result = utilx_ungrab_key(disp, win, symbol);
 		if( ungrab_result != 0)
 			dts_fail("utilx_grab_key", "ungrab failed");
 
@@ -138,12 +140,13 @@ static void utc_utilx_grab_key_share_p(void)
 {
 	int grab_result;
 	int ungrab_result;
+	const char *symbol = utilx_get_key_symbol("KEY_STOPCD");
 
-	grab_result = utilx_grab_key(disp, win, KEY_STOPCD, SHARED_GRAB);
+	grab_result = utilx_grab_key(disp, win, symbol, SHARED_GRAB);
 	if( grab_result == 0 )
 	{
 		dts_pass("utilx_grab_key", "passed");
-		ungrab_result = utilx_ungrab_key(disp, win, KEY_STOPCD);
+		ungrab_result = utilx_ungrab_key(disp, win, symbol);
 		if( ungrab_result != 0)
 			dts_fail("utilx_grab_key", "ungrab failed");
 	}
@@ -157,8 +160,9 @@ static void utc_utilx_grab_key_excl_n(void)
 {
 	int grab_result;
 	int ungrab_result;
+	const char *symbol = utilx_get_key_symbol("KEY_STOPCD");
 
-	grab_result = utilx_grab_key(NULL, win, KEY_STOPCD, EXCLUSIVE_GRAB);
+	grab_result = utilx_grab_key(NULL, win, symbol, EXCLUSIVE_GRAB);
 	if( grab_result != 0 )
 	{
 		dts_pass("utilx_grab_key", "passed");
@@ -166,7 +170,7 @@ static void utc_utilx_grab_key_excl_n(void)
 	else
 	{
 		dts_fail("utilx_grab_key", "failed");
-		ungrab_result = utilx_ungrab_key(disp, win, KEY_STOPCD);
+		ungrab_result = utilx_ungrab_key(disp, win, symbol);
 		if( ungrab_result != 0)
 			dts_fail("utilx_grab_key", "ungrab failed");
 
@@ -177,8 +181,9 @@ static void utc_utilx_grab_key_top_n(void)
 {
 	int grab_result;
 	int ungrab_result;
+	const char *symbol = utilx_get_key_symbol("KEY_STOPCD");
 
-	grab_result = utilx_grab_key(NULL, win, KEY_STOPCD, TOP_POSITION_GRAB);
+	grab_result = utilx_grab_key(NULL, win, symbol, TOP_POSITION_GRAB);
 	if( grab_result != 0 )
 	{
 		dts_pass("utilx_grab_key", "passed");
@@ -186,7 +191,7 @@ static void utc_utilx_grab_key_top_n(void)
 	else
 	{
 		dts_fail("utilx_grab_key", "failed");
-		ungrab_result = utilx_ungrab_key(disp, win, KEY_STOPCD);
+		ungrab_result = utilx_ungrab_key(disp, win, symbol);
 		if( ungrab_result != 0)
 			dts_fail("utilx_grab_key", "ungrab failed");
 
@@ -197,8 +202,9 @@ static void utc_utilx_grab_key_share_n(void)
 {
 	int grab_result;
 	int ungrab_result;
+	const char *symbol = utilx_get_key_symbol("KEY_STOPCD");
 
-	grab_result = utilx_grab_key(NULL, win, KEY_STOPCD, SHARED_GRAB);
+	grab_result = utilx_grab_key(NULL, win, symbol, SHARED_GRAB);
 	if( grab_result != 0 )
 	{
 		dts_pass("utilx_grab_key", "passed");
@@ -206,7 +212,7 @@ static void utc_utilx_grab_key_share_n(void)
 	else
 	{
 		dts_fail("utilx_grab_key", "failed");
-		ungrab_result = utilx_ungrab_key(disp, win, KEY_STOPCD);
+		ungrab_result = utilx_ungrab_key(disp, win, symbol);
 		if( ungrab_result != 0)
 			dts_fail("utilx_grab_key", "ungrab failed");
 
@@ -217,13 +223,14 @@ static void utc_utilx_ungrab_key_p(void)
 {
 	int grab_result;
 	int ungrab_result;
+	const char *symbol = utilx_get_key_symbol("KEY_STOPCD");
 
-	grab_result = utilx_grab_key(disp, win, KEY_STOPCD, SHARED_GRAB);
+	grab_result = utilx_grab_key(disp, win, symbol, SHARED_GRAB);
 	if( grab_result != 0 ){
 		dts_fail("utilx_ungrab_key", "failed to grab the key");
 	}
 
-	ungrab_result = utilx_ungrab_key(disp, win, KEY_STOPCD);
+	ungrab_result = utilx_ungrab_key(disp, win, symbol);
 	if(ungrab_result == 0)
 	{
 		dts_pass("utilx_ungrab_key", "passed");
@@ -238,8 +245,9 @@ static void utc_utilx_ungrab_key_n(void)
 {
 	int grab_result;
 	int ungrab_result;
+	const char *symbol = utilx_get_key_symbol("KEY_STOPCD");
 
-	ungrab_result = utilx_ungrab_key(NULL, win, KEY_STOPCD);
+	ungrab_result = utilx_ungrab_key(NULL, win, symbol);
 	if(ungrab_result != 0)
 	{
 		dts_pass("utilx_ungrab_key", "passed");

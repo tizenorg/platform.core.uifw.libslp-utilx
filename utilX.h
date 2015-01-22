@@ -513,7 +513,90 @@ void utilx_set_system_notification_level (Display* dpy, Window win, Utilx_Notifi
 Utilx_Notification_Level utilx_get_system_notification_level (Display* dpy, Window win);
 
 /**
- * @brief Grabs the key specfied by @a key_name for a window in the @a grab_mode.
+ * @brief Gets the string list and count of available key-names to grab.
+ * @details This function returns the newly-allocated list and count of available key-names to grab for a target device.
+ *          The key-name is unchangeable whatever you develope in different target.
+ *          However, key-symbol got by utilx_get_key_symbol() is changeable in different target.
+ * @since_tizen 3.0
+ * @remarks You should free the pointer of name list by free() to avoid memory-leak
+ * @param[out] count The number of avaiable keys for a target device
+ * @return newly-allocated list of available key strings, otherwise NULL.
+ * @see utilx_get_key_symbol()
+ * @par Example
+   @code
+
+  #include <utilX.h>
+
+  int
+  main (int argc, char* argv[])
+  {
+	const char **names;
+	int count = 0;
+	int i;
+
+	names = utilx_get_available_key_names (&count);
+	if (!names)
+		exit (-1);
+
+	for (i = 0; i < count; i++)
+	{
+		const char *symbol = utilx_get_key_symbol (names[i]);
+		printf ("name: %s, symbol: %s\n", names[i], symbol);
+	}
+
+	//should free names
+	free (names);
+
+	return 0;
+  }
+
+  @endcode
+ */
+const char** utilx_get_available_key_names (int *count);
+
+/**
+ * @brief Gets a key-symbol string for a available key-name string to grab.
+ * @details This function returns a key-symbol string for a available key-name to grab for a target device.
+ *          The key-name got by utilx_get_available_key_names() is unchangeable whatever you develope in different target.
+ *          However, key-symbol is changeable in different target.
+ * @since_tizen 3.0
+ * @param[in] key_name The name of a key got by utilx_get_available_key_names()
+ * @return key-symbol string if success, otherwise NULL.
+ * @see utilx_get_available_key_names(), utilx_grab_key(), utilx_ungrab_key()
+ * @par Example
+   @code
+
+  #include <utilX.h>
+
+  int
+  main (int argc, char* argv[])
+  {
+	const char **names;
+	int count = 0;
+	int i;
+
+	names = utilx_get_available_key_names (&count);
+	if (!names)
+		exit (-1);
+
+	for (i = 0; i < count; i++)
+	{
+		const char *symbol = utilx_get_key_symbol (names[i]);
+		printf ("name: %s, symbol: %s\n", names[i], symbol);
+	}
+
+	//should free names
+	free (names);
+
+	return 0;
+  }
+
+  @endcode
+ */
+const char* utilx_get_key_symbol (const char *key_name);
+
+/**
+ * @brief Grabs the key specfied by @a key_symbol for a window in the @a grab_mode.
  *
  * @details This function establishes a grab of the specified key for the specified window.\n
  *          Once a key is grabbed, all events originating from the key will only be reported to the specfied window.\n
@@ -528,183 +611,143 @@ Utilx_Notification_Level utilx_get_system_notification_level (Display* dpy, Wind
  *          A trial for choosing a proper grab mode will be needed.
  * @param[in] dpy The connection to the X server
  * @param[in] win The window to grab a key
- * @param[in] key_name The name of a key in the string (ex> #KEY_VOLUMEUP, #KEY_VOLUMEDOWN, #KEY_SEND, and so on)
+ * @param[in] key_symbol The symbol of a key in the string
  * @param[in] grab_mode The grab mode (such as #EXCLUSIVE_GRAB, #TOP_POSITION_GRAB, and #SHARED_GRAB)
  * @return @c 0 on success,
  *         otherwise failure
  * @pre This API must be called after the window 'win' has been mapped.
  * @post This API adds/changes the window property related to the grabbed key.
- * @see utilx_ungrab_key()
+ * @see utilx_ungrab_key(), utilx_get_available_key_names(), utilx_get_key_symbol()
  * @par Example (using X11 APIs)
   @code
-
-  // EXCLUSIVE_GRAB //
-
   #include <X11/Xlib.h>
   #include <utilX.h>
 
-  int main()
+  static const char* key_symbol;
+
+  static int
+  get_key_symbol (void)
   {
-	Display *disp = XOpenDisplay(NULL);
-	XEvent e;
-	int grab_result;
-	Window w = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 5,5, 470, 780, 2, BlackPixel(d,0), WhitePixel(d,0));
-	XSelectInput(disp, w, StructureNotifyMask | KeyPressMask | KeyReleaseMask);
-	XMapWindow(disp, w);
+      const char **names;
+      int i, count = 0;
 
-	while(1)
-	{
-	      XNextEvent(disp, &e);
-	      switch(e.type)
-	      {
-	             case MapNotify:
-		      grab_result = utilx_grab_key(disp, w, KEY_POWER, EXCLUSIVE_GRAB);
-		      if( EXCLUSIVE_GRABBED_ALREADY == grab_result )
-		            return -1;
-		      break;
-	      }
-	      ...
-	}
-	...
+      names = utilx_get_available_key_names (&count);
+      if (!names)
+          return 0;
 
-	utilx_ungrab_key(disp, win, KEY_POWER);
-	return 0;
+      for (i = 0; i < count; i++)
+          if (!strcmp (names[i], "KEY_UP"))
+          {
+              key_symbol = utilx_get_key_symbol ("KEY_UP");
+              printf ("found: key(%s,%s)\n", "KEY_UP", key_symbol);
+              free (names);  // should free
+              return 1;
+          }
+
+      free (names); // should free
+      return 0;
   }
-
-  // TOP_POSITION_GRAB //
-
-  #include <X11/Xlib.h>
-  #include <utilX.h>
 
   int main()
   {
-	Display *disp = XOpenDisplay(NULL);
-	XEvent e;
-	Window w = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 5,5, 470, 780, 2, BlackPixel(d,0), WhitePixel(d,0));
-	XSelectInput(disp, w, StructureNotifyMask | KeyPressMask | KeyReleaseMask);
-	XMapWindow(disp, w);
+      Display *disp = XOpenDisplay(NULL);
+      XEvent e;
+      int grab_result;
+      Window w = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 5,5, 470, 780, 2, BlackPixel(disp,0), WhitePixel(disp,0));
+      XSelectInput(disp, w, StructureNotifyMask | KeyPressMask | KeyReleaseMask | ExposureMask);
+      XMapWindow(disp, w);
 
-	while(1)
-	{
-	      XNextEvent(disp, &e);
-	      switch(e.type)
-	      {
-	             case MapNotify:
-		      utilx_grab_key(disp, w, KEY_POWER, TOP_POSITION_GRAB);
-		      break;
-	      }
-	      ...
-	}
-	...
+      if (!get_key_symbol ())
+          return -1;
 
-	utilx_ungrab_key(disp, win, KEY_POWER);
-	return 0;
+      while(1)
+      {
+          XNextEvent(disp, &e);
+
+          switch(e.type)
+          {
+          case MapNotify:
+              //EXCLUSIVE_GRAB
+              grab_result = utilx_grab_key(disp, w, key_symbol, EXCLUSIVE_GRAB);
+              if( EXCLUSIVE_GRABBED_ALREADY == grab_result )
+                  return -1;
+
+              //utilx_grab_key(disp, w, key_symbol, TOP_POSITION_GRAB);
+              //utilx_grab_key(disp, w, key_symbol, SHARED_GRAB);
+
+              break;
+          }
+          ...
+      }
+
+      ...
+
+      utilx_ungrab_key(disp, w, key_symbol);
+
+      return 0;
   }
-
-  // SHARED_GRAB //
-
-  #include <X11/Xlib.h>
-  #include <utilX.h>
-
-  int main()
-  {
-	Display *disp = XOpenDisplay(NULL);
-	XEvent e;
-	Window w = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 5,5, 470, 780, 2, BlackPixel(d,0), WhitePixel(d,0));
-	XSelectInput(disp, w, StructureNotifyMask | KeyPressMask | KeyReleaseMask);
-	XMapWindow(disp, w);
-
-	while(1)
-	{
-	      XNextEvent(disp, &e);
-	      switch(e.type)
-	      {
-	             case MapNotify:
-		      utilx_grab_key(disp, w, KEY_POWER, SHARED_GRAB);
-		      break;
-	      }
-	      ...
-	}
-	...
-
-	utilx_ungrab_key(disp, win, KEY_POWER);
-	return 0;
-  }
-
   @endcode
    * @par Example (using EFL APIs)
   @code
-
-  // EXCLUSIVE_GRAB //
-
   #include <utilX.h>
   #include <Ecore_Evas.h>
   #include <Ecore_X.h>
 
-  int main()
+  static const char* key_symbol;
+
+  static int
+  get_key_symbol (void)
   {
-	...
+      const char **names;
+      int i, count = 0;
 
-	Ecore_X_Display* disp = ecore_x_display_get();
-	Ecore_X_Window win = ecore_evas_software_x11_window_get(ee);
+      names = utilx_get_available_key_names (&count);
+      if (!names)
+          return 0;
 
-	int grab_result = utilx_grab_key(disp, win, KEY_POWER, EXCLUSIVE_GRAB);
-	if( EXCLUSIVE_GRABBED_ALREADY == grab_result )
-		return -1;
+      for (i = 0; i < count; i++)
+          if (!strcmp (names[i], "KEY_UP"))
+          {
+              key_symbol = utilx_get_key_symbol ("KEY_UP");
+              printf ("found: key(%s,%s)\n", "KEY_UP", key_symbol);
+              free (names);  // should free
+              return 1;
+          }
 
-	...
-
-	utilx_ungrab_key(disp, win, KEY_POWER);//Ungrab whenever a user wants to
-	return 0;
+      free (names); // should free
+      return 0;
   }
 
-  // TOP_POSITION_GRAB //
-
-  #include <utilX.h>
-  #include <Ecore_Evas.h>
-  #include <Ecore_X.h>
-
   int main()
   {
 	...
 
 	Ecore_X_Display* disp = ecore_x_display_get();
-	Ecore_X_Window win = ecore_evas_software_x11_window_get(ee);
+	Ecore_X_Window w = ecore_evas_software_x11_window_get(ee);
+	int grab_result;
 
-	utilx_grab_key(disp, win, KEY_POWER, TOP_POSITION_GRAB);
+	get_key_symbol ();
 
-	...
+      //EXCLUSIVE_GRAB
+      grab_result = utilx_grab_key(disp, w, key_symbol, EXCLUSIVE_GRAB);
+      if( EXCLUSIVE_GRABBED_ALREADY == grab_result )
+          return -1;
 
-	utilx_ungrab_key(disp, win, KEY_POWER);//Ungrab whenever a user wants to
-	return 0;
-  }
-
-  // SHARED_GRAB //
-
-  #include <utilX.h>
-  #include <Ecore_Evas.h>
-  #include <Ecore_X.h>
-
-  int main()
-  {
-	...
-
-	Ecore_X_Display* disp = ecore_x_display_get();
-	Ecore_X_Window win = ecore_evas_software_x11_window_get(ee);
-
-	utilx_grab_key(disp, win, KEY_POWER, SHARED_GRAB);
+      //utilx_grab_key(disp, w, key_symbol, TOP_POSITION_GRAB);
+      //utilx_grab_key(disp, w, key_symbol, SHARED_GRAB);
 
 	...
 
-	utilx_ungrab_key(disp, win, KEY_POWER);//Ungrab whenever a user wants to
+      utilx_ungrab_key(disp, w, key_symbol); //Ungrab whenever a user wants to
+
 	return 0;
   }
   @endcode
  */
-int utilx_grab_key (Display* dpy, Window win, const char* key_name, int grab_mode);
+int utilx_grab_key (Display* dpy, Window win, const char* key_symbol, int grab_mode);
 
 /**
- * @brief Ungrabs the key specfied by @a key_name for a window.
+ * @brief Ungrabs the key specfied by @a key_symbol for a window.
  *
  * @details This function releases the already established grab of the specfied key for the specified window.\n
  *          Once the grab of the key is released, delivery of the key events for the specfied window is going to be stopped.
@@ -714,179 +757,139 @@ int utilx_grab_key (Display* dpy, Window win, const char* key_name, int grab_mod
  * @since_tizen 2.3
  * @param[in] dpy The connection to the X server
  * @param[in] win The window to grab a key
- * @param[in] key_name The name of a key in the string (ex> #KEY_VOLUMEUP, #KEY_VOLUMEDOWN, #KEY_SEND, and so on)
+ * @param[in] key_symbol The symbol of a key in the string got by utilx_get_key_symbol()
  * @return @c 0 on success,
  *         otherwise failure
  * @pre This API must be called after the window 'win' is mapped.
  * @post This API changes/removes the window property related to the grabbed key.
- * @see utilx_grab_key()
+ * @see utilx_grab_key(), utilx_get_available_key_names(), utilx_get_key_symbol()
  * @par Example (using X11 APIs)
   @code
-
-  // EXCLUSIVE_GRAB //
-
   #include <X11/Xlib.h>
   #include <utilX.h>
 
-  int main()
+  static const char* key_symbol;
+
+  static int
+  get_key_symbol (void)
   {
-	Display *disp = XOpenDisplay(NULL);
-	XEvent e;
-	int grab_result;
-	Window w = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 5,5, 470, 780, 2, BlackPixel(d,0), WhitePixel(d,0));
-	XSelectInput(disp, w, StructureNotifyMask | KeyPressMask | KeyReleaseMask);
-	XMapWindow(disp, w);
+      const char **names;
+      int i, count = 0;
 
-	while(1)
-	{
-	      XNextEvent(disp, &e);
-	      switch(e.type)
-	      {
-	             case MapNotify:
-		      grab_result = utilx_grab_key(disp, w, KEY_POWER, EXCLUSIVE_GRAB);
-		      if( EXCLUSIVE_GRABBED_ALREADY == grab_result )
-		            return -1;
-		      break;
-	      }
-	      ...
-	}
-	...
+      names = utilx_get_available_key_names (&count);
+      if (!names)
+          return 0;
 
-	utilx_ungrab_key(disp, win, KEY_POWER);
-	return 0;
+      for (i = 0; i < count; i++)
+          if (!strcmp (names[i], "KEY_UP"))
+          {
+              key_symbol = utilx_get_key_symbol ("KEY_UP");
+              printf ("found: key(%s,%s)\n", "KEY_UP", key_symbol);
+              free (names);  // should free
+              return 1;
+          }
+
+      free (names); // should free
+      return 0;
   }
-
-  // TOP_POSITION_GRAB //
-
-  #include <X11/Xlib.h>
-  #include <utilX.h>
 
   int main()
   {
-	Display *disp = XOpenDisplay(NULL);
-	XEvent e;
-	Window w = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 5,5, 470, 780, 2, BlackPixel(d,0), WhitePixel(d,0));
-	XSelectInput(disp, w, StructureNotifyMask | KeyPressMask | KeyReleaseMask);
-	XMapWindow(disp, w);
+      Display *disp = XOpenDisplay(NULL);
+      XEvent e;
+      int grab_result;
+      Window w = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 5,5, 470, 780, 2, BlackPixel(disp,0), WhitePixel(disp,0));
+      XSelectInput(disp, w, StructureNotifyMask | KeyPressMask | KeyReleaseMask | ExposureMask);
+      XMapWindow(disp, w);
 
-	while(1)
-	{
-	      XNextEvent(disp, &e);
-	      switch(e.type)
-	      {
-	             case MapNotify:
-		      utilx_grab_key(disp, w, KEY_POWER, TOP_POSITION_GRAB);
-		      break;
-	      }
-	      ...
-	}
-	...
+      if (!get_key_symbol ())
+          return -1;
 
-	utilx_ungrab_key(disp, win, KEY_POWER);
-	return 0;
+      while(1)
+      {
+          XNextEvent(disp, &e);
+
+          switch(e.type)
+          {
+          case MapNotify:
+              //EXCLUSIVE_GRAB
+              grab_result = utilx_grab_key(disp, w, key_symbol, EXCLUSIVE_GRAB);
+              if( EXCLUSIVE_GRABBED_ALREADY == grab_result )
+                  return -1;
+
+              //utilx_grab_key(disp, w, key_symbol, TOP_POSITION_GRAB);
+              //utilx_grab_key(disp, w, key_symbol, SHARED_GRAB);
+
+              break;
+          }
+          ...
+      }
+
+      ...
+
+      utilx_ungrab_key(disp, w, key_symbol);
+
+      return 0;
   }
-
-  // SHARED_GRAB //
-
-  #include <X11/Xlib.h>
-  #include <utilX.h>
-
-  int main()
-  {
-	Display *disp = XOpenDisplay(NULL);
-	XEvent e;
-	Window w = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 5,5, 470, 780, 2, BlackPixel(d,0), WhitePixel(d,0));
-	XSelectInput(disp, w, StructureNotifyMask | KeyPressMask | KeyReleaseMask);
-	XMapWindow(disp, w);
-
-	while(1)
-	{
-	      XNextEvent(disp, &e);
-	      switch(e.type)
-	      {
-	             case MapNotify:
-		      utilx_grab_key(disp, w, KEY_POWER, SHARED_GRAB);
-		      break;
-	      }
-	      ...
-	}
-	...
-
-	utilx_ungrab_key(disp, win, KEY_POWER);
-	return 0;
-  }
-
   @endcode
    * @par Example (using EFL APIs)
   @code
-
-  // EXCLUSIVE_GRAB //
-
   #include <utilX.h>
   #include <Ecore_Evas.h>
   #include <Ecore_X.h>
 
-  int main()
+  static const char* key_symbol;
+
+  static int
+  get_key_symbol (void)
   {
-	...
+      const char **names;
+      int i, count = 0;
 
-	Ecore_X_Display* disp = ecore_x_display_get();
-	Ecore_X_Window win = ecore_evas_software_x11_window_get(ee);
+      names = utilx_get_available_key_names (&count);
+      if (!names)
+          return 0;
 
-	int grab_result = utilx_grab_key(disp, win, KEY_POWER, EXCLUSIVE_GRAB);
-	if( EXCLUSIVE_GRABBED_ALREADY == grab_result )
-		return -1;
-	...
+      for (i = 0; i < count; i++)
+          if (!strcmp (names[i], "KEY_UP"))
+          {
+              key_symbol = utilx_get_key_symbol ("KEY_UP");
+              printf ("found: key(%s,%s)\n", "KEY_UP", key_symbol);
+              free (names);  // should free
+              return 1;
+          }
 
-	utilx_ungrab_key(disp, win, KEY_POWER);//Ungrab whenever a user wants to
-	return 0;
+      free (names); // should free
+      return 0;
   }
 
-  // TOP_POSITION_GRAB //
-
-  #include <utilX.h>
-  #include <Ecore_Evas.h>
-  #include <Ecore_X.h>
-
   int main()
   {
 	...
 
 	Ecore_X_Display* disp = ecore_x_display_get();
-	Ecore_X_Window win = ecore_evas_software_x11_window_get(ee);
+	Ecore_X_Window w = ecore_evas_software_x11_window_get(ee);
+	int grab_result;
 
-	utilx_grab_key(disp, win, KEY_POWER, TOP_POSITION_GRAB);
+	get_key_symbol ();
 
-	...
+      //EXCLUSIVE_GRAB
+      grab_result = utilx_grab_key(disp, w, key_symbol, EXCLUSIVE_GRAB);
+      if( EXCLUSIVE_GRABBED_ALREADY == grab_result )
+          return -1;
 
-	utilx_ungrab_key(disp, win, KEY_POWER);//Ungrab whenever a user wants to
-
-	return 0;
-  }
-
-  // SHARED_GRAB //
-
-  #include <utilX.h>
-  #include <Ecore_Evas.h>
-  #include <Ecore_X.h>
-
-  int main()
-  {
-	...
-
-	Ecore_X_Display* disp = ecore_x_display_get();
-	Ecore_X_Window win = ecore_evas_software_x11_window_get(ee);
-
-	utilx_grab_key(disp, win, KEY_POWER, SHARED_GRAB);
+      //utilx_grab_key(disp, w, key_symbol, TOP_POSITION_GRAB);
+      //utilx_grab_key(disp, w, key_symbol, SHARED_GRAB);
 
 	...
 
-	utilx_ungrab_key(disp, win, KEY_POWER);//Ungrab whenever a user wants to
+      utilx_ungrab_key(disp, w, key_symbol); //Ungrab whenever a user wants to
+
 	return 0;
   }
   @endcode
  */
-int utilx_ungrab_key (Display* dpy, Window win, const char* key_name);
+int utilx_ungrab_key (Display* dpy, Window win, const char* key_symbol);
 
 /**
  * @brief Sets the window's opaque state.
