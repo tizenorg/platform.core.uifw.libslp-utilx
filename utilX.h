@@ -211,6 +211,34 @@ extern "C" {
  */
 #define KEY_VOICEWAKEUP		"XF86Launch4"
 
+// Hauppauge remocon keys
+/**
+ * @brief Definition for XKeySym (XServer Key Symbol) corresponding to the 'Channel Up' key.
+ */
+#define KEY_CHANNELUP 	"XF86KbdBrightnessUp"
+/**
+ * @brief Definition for XKeySym (XServer Key Symbol) corresponding to the 'Channel Down' key.
+ */
+#define KEY_CHANNELDOWN	"XF86KbdBrightnessDown"
+/**
+ * @brief Definition for XKeySym (XServer Key Symbol) corresponding to the 'Close' key.
+ */
+#define KEY_CLOSE "XF86Close"
+/**
+ * @brief Definition for XKeySym (XServer Key Symbol) corresponding to the 'Video Pause' key.
+ */
+#define KEY_VIDEOPAUSE "Pause"
+/**
+ * @brief Definition for XKeySym (XServer Key Symbol) corresponding to the 'Audio Record' key.
+ */
+#define KEY_RECORD "XF86AudioRecord"
+
+/**
+ * @brief Definition for XKeySym (XServer Key Symbol) corresponding to the 'TV(toggle)' key.
+ */
+#define KEY_TV "XF86Display"
+
+
 /**
  * @brief Definition for the length of a string corresponding to the 'Volume Up' key.
  */
@@ -377,6 +405,33 @@ extern "C" {
  * @brief Definition for the length of a string corresponding to the 'Voice Wakeup' key.
  */
 #define LEN_KEY_VOICEWAKEUP			11
+
+// Hauppauge remocon keys
+/**
+ * @brief Definition for the length of a string corresponding to the 'Channel Up' key.
+ */
+#define LEN_KEY_CHANNELUP 	19
+/**
+ * @brief Definition for the length of a string corresponding to the 'Channel Down' key.
+ */
+#define LEN_KEY_CHANNELDOWN	21
+/**
+ * @brief Definition for the length of a string corresponding to the 'Close' key.
+ */
+#define LEN_KEY_CLOSE 9
+/**
+ * @brief Definition for the length of a string corresponding to the 'Video Pause' key.
+ */
+#define LEN_KEY_VIDEOPAUSE 5
+/**
+ * @brief Definition for the length of a string corresponding to the 'Audio Record' key.
+ */
+#define LEN_KEY_RECORD 15
+/**
+ * @brief Definition for the length of a string corresponding to the 'TV(toggle)' key.
+ */
+#define LEN_KEY_TV 11
+
 
 /**
  * @brief Definition for getting the grabbed-key exclusively regardless of its position on the window stack with the possibility of overriding the grab by the other client window mode.
