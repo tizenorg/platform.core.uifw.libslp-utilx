@@ -7,7 +7,6 @@ Release:    1
 Group:      UI Framework/Libraries
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
-Source1001: 	libslp-utilx.manifest
 
 BuildRequires: cmake
 BuildRequires: pkgconfig(libdri2)
@@ -40,7 +39,6 @@ Utility functions for the XWindow (developement files)
 
 %prep
 %setup -q
-cp %{SOURCE1001} .
 
 
 %build
@@ -63,13 +61,11 @@ cp %{_builddir}/%{buildsubdir}/LICENSE.APLv2 %{buildroot}/usr/share/license/%{na
 
 
 %files
-%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libutilX.so.*
 /usr/share/license/%{name}
 
 %files devel
-%manifest %{name}.manifest
 %defattr(-,root,root,-)
 /usr/include/*
 %{_libdir}/libutilX.so
